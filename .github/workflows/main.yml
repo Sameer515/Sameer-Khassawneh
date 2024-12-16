@@ -19,5 +19,5 @@ jobs:
         with:
           node-version: 16
       - run: npm install -g snyk
-      - run: snyk auth ${{ secrets.SNYK_TOKEN }}
-      - run: snyk test --all-projects --org=${{ secrets.SNYK_ORG }}
+      - run: snyk auth ${{ secrets.SNYK_GH_ACTIONS_TOKEN }}
+      - run: snyk test --all-projects --org=${{ vars.SNYK_ORG }}
