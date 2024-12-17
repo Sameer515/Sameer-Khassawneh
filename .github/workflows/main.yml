@@ -6,9 +6,14 @@ concurrency:
 
 on:
   merge_group:
-    types: [checks_requested]
+    types:
+      - checks_requested
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
 
 jobs:
   snyk-opensource-pipeline:
@@ -44,7 +49,7 @@ jobs:
         run: npm install --location=global snyk@latest
 
       # Step 5: Install Snyk Delta
-      - name: Install snyk_delta
+      - name: Install Snyk Delta
         run: npm install --location=global snyk-delta@latest
 
       # Step 6: Install snyk_delta_all_projects.sh
@@ -52,24 +57,34 @@ jobs:
         run: |
           wget -O snyk_delta_all_projects.sh https://raw.githubusercontent.com/snyk-tech-services/snyk-delta/refs/heads/develop/snyk_delta_all_projects.sh
           mv ./snyk_delta_all_projects.sh /usr/local/bin/
+
       # Step 7: Install jq
       - name: Install jq
         run: npm install --location=global node-jq
 
-      # Step 8: Authenticate Snyk 
+      # Step 8: Authenticate Snyk
       - name: Authenticate with Snyk
         run: snyk auth ${{ secrets.SNYK_GH_ACTIONS_TOKEN }}
 
-      # Step 9: Run Snyk Open Source Scan and Diff
-      - name: Run Snyk Delta Scan
-        run:  /bin/bash snyk_delta_all_projects.sh --org=${{ vars.SNYK_ORG  }} --remote-repo-url=${{ github.repository }} --setPassIfNoBaseline true -d
+      # Step 9: Run Snyk Monitor first time
+      - name: Run Snyk Monitor First Time
+        run: snyk monitor --all-projects --org=${{ vars.SNYK_ORG }} --remote-repo-url=${{ github.repository }}
 
+      # Step 10: Run Snyk Open Source Scan and Diff
+      - name: Run Snyk Delta Scan
+        run: |
+          /bin/bash snyk_delta_all_projects.sh \
+          --org=${{ vars.SNYK_ORG }} \
+          --remote-repo-url=${{ github.repository }} \
+          --setPassIfNoBaseline true
+
+      # Step 11: Run Snyk Monitor Scan
       - name: Run Snyk Monitor Scan
-        run: snyk monitor --all-projects --org=${{ vars.SNYK_ORG  }} --remote-repo-url=${{ github.repository }}
+        run: snyk monitor --all-projects --org=${{ vars.SNYK_ORG }} --remote-repo-url=${{ github.repository }}
 
       # Uncomment the following lines to enable Snyk Monitor with custom options
-     #- name: Run snyk monitor
+      # - name: Run Snyk Monitor
       #   uses: snyk/actions/node@master
       #   with:
       #     command: monitor
-      #     args: --all-projects --detection-depth=2 --org=${{ SNYK_ORG }} --severity=high
+      #     args: --all-projects --detection-depth=2 --org=${{ vars.SNYK_ORG }} --severity=high
